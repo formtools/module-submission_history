@@ -152,3 +152,49 @@ function sh_submission_has_history($form_id, $submission_id)
   return $result["c"] > 0;
 }
 
+
+/**
+ * This returns information about who last modified the submission. Added in 1.1.3.
+ *
+ * @param integer $form_id
+ * @param integer $submission_id
+ * @return array has_history  - true/false
+ *               account_type - admin/client/unknown
+ *               account_id   - the ID of the admin/client
+ *               first_name   - the admin/client last name
+ *               last_name    - the admin/client last name
+ */
+function sh_get_last_modified_info($form_id, $submission_id)
+{
+  global $g_table_prefix;
+
+  $query = mysql_query("
+    SELECT sh___change_account_type, sh___change_account_id
+    FROM   {$g_table_prefix}form_{$form_id}_history
+    WHERE  submission_id = $submission_id
+    ORDER BY     sh___history_id DESC
+    LIMIT 1
+  ");
+
+  $return_info = array("has_been_modified" => false);
+  if (mysql_num_rows($query) == 0)
+  {
+    return $return_info;
+  }
+
+  $result = mysql_fetch_assoc($query);
+  $return_info = array(
+    "has_been_modified" => true,
+    "account_type"      => $result["sh___change_account_type"],
+    "account_id"        => $result["sh___change_account_id"]
+  );
+
+  if (is_numeric($result["sh___change_account_id"]))
+  {
+    $account_info = ft_get_account_info($result["sh___change_account_id"]);
+    $return_info["first_name"] = $account_info["first_name"];
+    $return_info["last_name"] = $account_info["last_name"];
+  }
+
+  return $return_info;
+}
