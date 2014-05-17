@@ -34,8 +34,8 @@ $HOOKS = array(
   array(
     "hook_type"       => "code",
     "action_location" => "end",
-    "function_name"   => "ft_update_form_fields_tab",
-    "hook_function"   => "ft_hook_update_form_fields_tab",
+    "function_name"   => "_ft_alter_table_column",
+    "hook_function"   => "sh_rename_table_column",
     "priority"        => "50"
   ),
   array(
@@ -102,6 +102,7 @@ $HOOKS = array(
     "priority"        => "50"
   )
 );
+
 
 $FILES = array(
   "database_integrity.php",

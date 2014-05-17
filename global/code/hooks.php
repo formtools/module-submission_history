@@ -17,7 +17,7 @@ function sh_register_hooks()
   ft_register_hook("code", "submission_history", "end", "ft_delete_form_fields", "sh_hook_delete_form_fields");
   ft_register_hook("code", "submission_history", "end", "ft_finalize_form", "sh_hook_finalize_form");
   ft_register_hook("code", "submission_history", "start", "ft_delete_form", "sh_hook_delete_form");
-  ft_register_hook("code", "submission_history", "end", "ft_update_form_fields_tab", "ft_hook_update_form_fields_tab");
+  ft_register_hook("code", "submission_history", "end", "_ft_alter_table_column", "sh_rename_table_column");
 
   // submissions
   ft_register_hook("code", "submission_history", "end", "ft_create_blank_submission", "sh_hook_create_blank_submission");
@@ -71,10 +71,11 @@ function sh_hook_add_form_fields($postdata)
 
 
 /**
- * Shadows the ft_delete_form_fields Core function. This deletes any deleted fields in the history table.
- * Since the info passed via the hook is pretty sodding POOR (Ben!), we figure out what's been deleted by
- * doing a manual comparison of the two tables. This is probably a better approach anyway because it ensures
- * that the field(s) just being deleted were successfully deleted.
+ * Updated in 1.1.4, this deletes the coresponding form fields in the history table when the admin
+ * deletes them from the Edit Form -> Fields tab.
+ *
+ * By the time this function is called, the actual fields have been removed from the database. This
+ * function wasn't properly working prior to 1.1.4. This module now REQUIRES Form Tools Core 2.1.6 or later. :-(
  *
  * @param array $postdata
  */
@@ -83,31 +84,26 @@ function sh_hook_delete_form_fields($postdata)
   global $g_table_prefix;
 
   $form_id = $postdata["form_id"];
+  if (!isset($postdata["field_ids"]) || !is_array($postdata["field_ids"]) || !isset($postdata["deleted_field_info"]))
+    return;
 
-  // get column names of form table
-  $col_name_hash = ft_get_form_column_names($form_id);
-  $original_col_names = array_keys($col_name_hash);
-
-  // get column names of history table
-  $history_table_col_names = sh_get_history_table_col_names($form_id);
-
-  // remove all the Submission History-specific tables so we can do a clean comparison
-  array_splice($history_table_col_names, array_search("sh___history_id", $history_table_col_names), 1);
-  array_splice($history_table_col_names, array_search("sh___change_date", $history_table_col_names), 1);
-  array_splice($history_table_col_names, array_search("sh___change_type", $history_table_col_names), 1);
-  array_splice($history_table_col_names, array_search("sh___change_account_type", $history_table_col_names), 1);
-  array_splice($history_table_col_names, array_search("sh___change_account_id", $history_table_col_names), 1);
-  array_splice($history_table_col_names, array_search("sh___changed_fields", $history_table_col_names), 1);
-
-  // figure out which columns exist in the history table that AREN'T in the original table
-  $removed_columns = array_diff($history_table_col_names, $original_col_names);
-
-  foreach ($removed_columns as $col_name)
+  foreach ($postdata["field_ids"] as $field_id)
   {
-    if ($col_name == "is_finalized")
-      continue;
+  	$field_info = array();
+  	foreach ($postdata["deleted_field_info"] as $curr_field_info)
+  	{
+  		if ($field_id == $curr_field_info["field_id"])
+  		{
+  			$field_info = $curr_field_info;
+  			break;
+  		}
+  	}
 
-    @mysql_query("ALTER TABLE {$g_table_prefix}form_{$form_id}_history DROP $col_name");
+  	if (!empty($field_info))
+  	{
+      $col_name = $field_info["col_name"];
+      @mysql_query("ALTER TABLE {$g_table_prefix}form_{$form_id}_history DROP $col_name");
+  	}
   }
 }
 
@@ -323,28 +319,30 @@ function sh_hook_delete_file_submission($postdata)
 
 
 /**
- * Used to handle cases where the user changes the database column name.
+ * Used to handle cases where the user changes the database column name. This changed in 1.1.4
+ * to actually WORK with Form Tools Core 2.1.x (needs 2.1.7 or later).
+ *
+ * This hook call extends the core _ft_alter_table_column function, called whenever ANY table
+ * is altered. This function figures out if
  *
  * @param array $postdata
  */
-function ft_hook_update_form_fields_tab($postdata)
+function sh_rename_table_column($info)
 {
-  global $g_field_sizes;
+  global $g_field_sizes, $g_table_prefix;
 
-  foreach ($postdata["field_info"] as $field_info)
-  {
-  	if ($field_info["col_name_changed"] == "no" && $field_info["field_size_changed"] == "no")
-  	  continue;
+  if (!preg_match("/{$g_table_prefix}form_(\d)+/", $info["table"], $matches))
+    continue;
 
-  	$old_col_name = $field_info["old_col_name"];
-  	$new_col_name = $field_info["col_name"];
+  $form_id = $matches[1];
 
-  	// confirm that the new column name does in fact exist in the source table
-  	$col_name_hash = ft_get_form_column_names($form_id);
-    if (!array_key_exists($new_col_name, $col_name_hash))
-      continue;
-
-  	$new_field_size = $g_field_sizes[$field_info["field_size"]]["sql"];
-    _ft_alter_table_column("form_{$form_id}_history", $old_col_name, $new_col_name, $new_field_size);
-  }
+  // just blithely attempt to update the database table. It may not exist, but that's fine.
+  $history_table = "{$info["table"]}_history";
+  $old_col_name = $info["old_col_name"];
+  $new_col_name = $info["new_col_name"];
+  $col_type     = $info["col_type"];
+  @mysql_query("
+    ALTER TABLE $history_table
+    CHANGE      $old_col_name $new_col_name $col_type
+  ");
 }
