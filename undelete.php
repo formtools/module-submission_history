@@ -19,7 +19,6 @@ if (isset($_POST["undelete"]))
   list($g_success, $g_message) = sh_undelete_submission($form_id, $_POST["history_id"]);
 }
 
-
 $deleted_submissions = sh_get_deleted_submissions($form_id, $page, $search);
 
 // ------------------------------------------------------------------------------------------------

@@ -1,10 +1,7 @@
 div#sh__content {
-  -moz-border-radius: 10px;
-  border-radius: 10px;
-  background-color: #e6f5ff;
   padding: 4px 8px 4px;
   margin-top: 16px;
-  border: 1px solid #999999;
+  width: 723px;
 }
 div#sh__page_label {
   font-size: 8pt;
@@ -85,10 +82,16 @@ div.sh__changes select {
 .sh__previous_value {
   float: left;
   width: 255px;
+  max-height: 80px;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
 }
 .sh__new_value {
   float: left;
   width: 255px;
+  max-height: 80px;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
 }
 div#sh__results_div li.changed_field {
   background-color: #ffffaa;

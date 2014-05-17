@@ -8,6 +8,33 @@
 
 // ------------------------------------------------------------------------------------------------
 
+
+function sh_register_hooks()
+{
+  // these hook shadow the core functions so that any time the form tables change, the history table columns
+  // are also updated accordingly
+  ft_register_hook("code", "submission_history", "end", "ft_add_form_fields", "sh_hook_add_form_fields");
+  ft_register_hook("code", "submission_history", "end", "ft_delete_form_fields", "sh_hook_delete_form_fields");
+  ft_register_hook("code", "submission_history", "end", "ft_finalize_form", "sh_hook_finalize_form");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_form", "sh_hook_delete_form");
+  ft_register_hook("code", "submission_history", "end", "ft_update_form_fields_tab", "ft_hook_update_form_fields_tab");
+
+  // submissions
+  ft_register_hook("code", "submission_history", "end", "ft_create_blank_submission", "sh_hook_create_blank_submission");
+  ft_register_hook("code", "submission_history", "end", "ft_process_form", "sh_hook_process_form");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_submission", "sh_hook_delete_submission");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_submissions", "sh_hook_delete_submissions");
+  ft_register_hook("code", "submission_history", "end", "ft_update_submission", "sh_hook_update_submission");
+  ft_register_hook("code", "submission_history", "start", "ft_update_submission", "sh_hook_update_submission_init");
+  ft_register_hook("code", "submission_history", "end", "ft_file_delete_file_submission", "sh_hook_delete_file_submission");
+
+
+  // display the submission history on the administrator's Edit Submission page
+  ft_register_hook("template", "submission_history", "admin_edit_submission_bottom", "", "sh_hook_display_submission_changelog");
+  ft_register_hook("code", "submission_history", "main", "ft_display_page", "sh_hook_include_module_resources");
+}
+
+
 /**
  * This hook is called after the administrator adds one or more fields to a form. Rather than re-doing
  * the work done by ft_add_form_fields, this just examines the content of the form table and adds those
@@ -17,7 +44,7 @@
  */
 function sh_hook_add_form_fields($postdata)
 {
-  global $g_table_prefix;
+  global $g_table_prefix, $g_field_sizes;
 
   $form_id = $postdata["form_id"];
 
@@ -35,21 +62,11 @@ function sh_hook_add_form_fields($postdata)
   // for each, add the new column to the history table
   foreach ($new_columns as $new_column_name)
   {
-     // get the field size of this form - that's all we really need to know
-     $field_info = ft_get_form_field_by_colname($form_id, $new_column_name);
-     $field_size = $field_info["field_size"];
-
-     $new_field_size = "";
-     switch ($field_size)
-     {
-       case "tiny":       $new_field_size = "VARCHAR(5)";   break;
-       case "small":      $new_field_size = "VARCHAR(20)";  break;
-       case "medium":     $new_field_size = "VARCHAR(255)"; break;
-       case "large":      $new_field_size = "TEXT";         break;
-       case "very_large": $new_field_size = "MEDIUMTEXT";   break;
-       default:           $new_field_size = "VARCHAR(255)"; break;
-     }
-     list ($is_success, $err_message) = _ft_add_table_column("{$g_table_prefix}form_{$form_id}_history", $new_column_name, $new_field_size);
+    // get the field size of this form - that's all we really need to know
+    $field_info = ft_get_form_field_by_colname($form_id, $new_column_name);
+    $field_size = $field_info["field_size"];
+    $new_field_size = $g_field_sizes[$field_size]["sql"];
+    list($is_success, $err_message) = _ft_add_table_column("{$g_table_prefix}form_{$form_id}_history", $new_column_name, $new_field_size);
   }
 }
 
@@ -92,39 +109,6 @@ function sh_hook_delete_form_fields($postdata)
       continue;
 
     @mysql_query("ALTER TABLE {$g_table_prefix}form_{$form_id}_history DROP $col_name");
-  }
-}
-
-
-function sh_hook_update_form_database_tab($postdata)
-{
-  global $g_table_prefix;
-
-  $form_id = $postdata["form_id"];
-  $form_info = ft_get_form($form_id);
-
-  if ($form_info["is_complete"] == "no")
-    return;
-
-  $flipped = array_flip($postdata["db_col_changes"]);
-  while (list($old_col_name, $new_col_name) = each($postdata["db_col_change_hash"]))
-  {
-    // this is a bit circuitous, but all the info we need to figure out the new database column size is in $postdata.
-    // (1) find the field ID for this updated column (the key in db_col_changes)
-    $field_id = $flipped[$new_col_name];
-    $field_size = $postdata["infohash"]["field_{$field_id}_size"];
-
-    $new_field_size = "";
-    switch ($field_size)
-    {
-      case "tiny":       $new_field_size = "VARCHAR(5)";   break;
-      case "small":      $new_field_size = "VARCHAR(20)";  break;
-      case "medium":     $new_field_size = "VARCHAR(255)"; break;
-      case "large":      $new_field_size = "TEXT";         break;
-      case "very_large": $new_field_size = "MEDIUMTEXT";   break;
-      default:           $new_field_size = "VARCHAR(255)"; break;
-    }
-    _ft_alter_table_column("{$g_table_prefix}form_{$form_id}_history", $old_col_name, $new_col_name, $new_field_size);
   }
 }
 
@@ -246,8 +230,9 @@ function sh_hook_update_submission($postdata)
 {
   $form_id       = $postdata["form_id"];
   $submission_id = $postdata["submission_id"];
+  $context = (isset($postdata["infohash"]["context"]) && $postdata["infohash"]["context"] == "submission_accounts") ? "submission" : "update";
   $submission_info = ft_get_submission_info($form_id, $submission_id);
-  sh_add_history_row($form_id, $submission_id, "update", $submission_info);
+  sh_add_history_row($form_id, $submission_id, $context, $submission_info);
 }
 
 /**
@@ -312,7 +297,7 @@ function sh_hook_include_module_resources($postdata)
   $head_string = $g_smarty->_tpl_vars["head_string"];
   $head_string .=<<<EOF
   <link rel="stylesheet" type="text/css" media="all" href="{$g_root_url}/modules/submission_history/global/css/styles.css" />
-  <script type="text/javascript" src="{$g_root_url}/modules/submission_history/global/scripts/scripts.js"></script>
+  <script src="{$g_root_url}/modules/submission_history/global/scripts/scripts.js?v110"></script>
 EOF;
 
   $postdata["g_smarty"]->assign("head_string", $head_string);
@@ -335,4 +320,32 @@ function sh_hook_delete_file_submission($postdata)
   $submission_info = ft_get_submission_info($form_id, $submission_id);
 
   sh_add_history_row($form_id, $submission_id, "update", $submission_info);
+}
+
+
+/**
+ * Used to handle cases where the user changes the database column name.
+ *
+ * @param array $postdata
+ */
+function ft_hook_update_form_fields_tab($postdata)
+{
+  global $g_field_sizes;
+
+  foreach ($postdata["field_info"] as $field_info)
+  {
+  	if ($field_info["col_name_changed"] == "no" && $field_info["field_size_changed"] == "no")
+  	  continue;
+
+  	$old_col_name = $field_info["old_col_name"];
+  	$new_col_name = $field_info["col_name"];
+
+  	// confirm that the new column name does in fact exist in the source table
+  	$col_name_hash = ft_get_form_column_names($form_id);
+    if (!array_key_exists($new_col_name, $col_name_hash))
+      continue;
+
+  	$new_field_size = $g_field_sizes[$field_info["field_size"]]["sql"];
+    _ft_alter_table_column("form_{$form_id}_history", $old_col_name, $new_col_name, $new_field_size);
+  }
 }

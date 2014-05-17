@@ -54,7 +54,7 @@ function sh_get_current_account_info()
  */
 function sh_is_tracking_form($form_id)
 {
-  $tracked_form_ids = ft_get_module_settings("tracked_form_ids");
+  $tracked_form_ids = ft_get_module_settings("tracked_form_ids", "submission_history");
   $form_ids = explode(",", $tracked_form_ids);
   return in_array($form_id, $form_ids);
 }

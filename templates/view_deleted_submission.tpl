@@ -2,18 +2,20 @@
 
   <table cellpadding="0" cellspacing="0">
   <tr>
-    <td width="45"><img src="images/icon_submission_history.gif" width="34" height="34" /></td>
+    <td width="45"><a href="index.php"><img src="images/icon_submission_history.gif" border="0" width="34" height="34" /></a></td>
     <td class="title">
-      <a href="./">{$L.module_name|upper}</a> &raquo;
-      <a href="undelete.php">{$L.phrase_deleted_submissions|upper}</a> &raquo;
-      {$L.word_undelete|upper}
+      <a href="../../admin/modules">{$LANG.word_modules}</a>
+      <span class="joiner">&raquo;</span>
+      <a href="./">{$L.module_name}</a>
+      <span class="joiner">&raquo;</span>
+      {$L.word_undelete}
     </td>
   </tr>
   </table>
 
   {include file='messages.tpl'}
 
-  <table cellpadding="0" cellspacing="0" class="margin_top_large margin_bottom_large">
+  <table cellpadding="0" cellspacing="0" class="margin_bottom_large">
     <tr>
       <td class="nowrap" width="60">
         {if $previous_history_id}

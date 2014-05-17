@@ -7,27 +7,7 @@ function submission_history__install()
 {
   global $g_table_prefix;
 
-  // these hook shadow the core functions so that any time the form tables change, the history table columns
-  // are also updated accordingly
-  ft_register_hook("code", "submission_history", "end", "ft_add_form_fields", "sh_hook_add_form_fields");
-  ft_register_hook("code", "submission_history", "end", "ft_delete_form_fields", "sh_hook_delete_form_fields");
-  ft_register_hook("code", "submission_history", "end", "ft_update_form_database_tab", "sh_hook_update_form_database_tab");
-  ft_register_hook("code", "submission_history", "end", "ft_finalize_form", "sh_hook_finalize_form");
-  ft_register_hook("code", "submission_history", "start", "ft_delete_form", "sh_hook_delete_form");
-
-  // submissions
-  ft_register_hook("code", "submission_history", "end", "ft_create_blank_submission", "sh_hook_create_blank_submission");
-  ft_register_hook("code", "submission_history", "end", "ft_process_form", "sh_hook_process_form");
-  ft_register_hook("code", "submission_history", "start", "ft_delete_submission", "sh_hook_delete_submission");
-  ft_register_hook("code", "submission_history", "start", "ft_delete_submissions", "sh_hook_delete_submissions");
-  ft_register_hook("code", "submission_history", "end", "ft_update_submission", "sh_hook_update_submission");
-  ft_register_hook("code", "submission_history", "start", "ft_update_submission", "sh_hook_update_submission_init");
-  ft_register_hook("code", "submission_history", "end", "ft_delete_file_submission", "sh_hook_delete_file_submission");
-
-  // display the submission history on the administrator's Edit Submission page
-  ft_register_hook("template", "submission_history", "admin_edit_submission_bottom", "", "sh_hook_display_submission_changelog");
-  ft_register_hook("code", "submission_history", "main", "ft_display_page", "sh_hook_include_module_resources");
-
+  sh_register_hooks();
 
   // our create table query
   $queries = array();
@@ -78,3 +58,23 @@ function submission_history__uninstall($module_id)
 
   return array(true, "");
 }
+
+
+/**
+ * Our upgrade function.
+ *
+ * @param array $old_version
+ * @param array $new_version
+ */
+function submission_history__upgrade($old_version, $new_version)
+{
+  // we made a few changes to the hooks in this version. Wipe out the old and start anew
+  if ($old_version_info["release_date"] < 20110624)
+  {
+    ft_unregister_module_hooks("submission_history");
+    sh_register_hooks();
+  }
+}
+
+
+

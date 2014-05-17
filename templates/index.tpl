@@ -2,8 +2,12 @@
 
   <table cellpadding="0" cellspacing="0">
   <tr>
-    <td width="45"><img src="images/icon_submission_history.gif" width="34" height="34" /></td>
-    <td class="title">{$L.module_name|upper}</td>
+    <td width="45"><a href="index.php"><img src="images/icon_submission_history.gif" border="0" width="34" height="34" /></a></td>
+    <td class="title">
+      <a href="../../admin/modules">{$LANG.word_modules}</a>
+      <span class="joiner">&raquo;</span>
+      {$L.module_name}
+    </td>
   </tr>
   </table>
 
@@ -17,7 +21,7 @@
       </div>
       <p>
         <input type="button" name="create_history_table" id="create_history_table"
-        	value="{$L.phrase_create_history_tables}" onclick="page_ns.create_history_tables()" />
+          value="{$L.phrase_create_history_tables}" onclick="page_ns.create_history_tables()" />
       </p>
     </form>
 
@@ -28,7 +32,7 @@
       <div class="margin_bottom_large">
         {$L.text_tracking_table}
       </div>
-      <table cellspacing="1" cellpadding="0" class="list_table">
+      <table cellspacing="1" cellpadding="0" class="list_table check_areas">
       <tr>
         <th> </th>
         <th>{$LANG.word_form}</th>
@@ -42,7 +46,7 @@
       <tr>
         <td class="pad_left_small light_grey">{$form.form_id}</td>
         <td class="pad_left_small"><a href="../../admin/forms/submissions.php?form_id={$form.form_id}">{$form.form_name}</a></td>
-        <td align="center">
+        <td align="center" class="check_area">
           <input type="checkbox" name="tracked_form_ids[]" value="{$form.form_id}"
             {if $form.form_id|in_array:$configured_form_ids}checked{/if} />
         </td>

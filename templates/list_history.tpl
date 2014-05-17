@@ -43,7 +43,7 @@
             {$L.phrase_submission_accounts_module}
           {else}
             <a href="../clients/edit.php?client_id={$item.sh___change_account_id}">{$client_info[$item.sh___change_account_id].first_name} {$client_info[$item.sh___change_account_id].last_name}</a>
-          {/if}
+          {/if}&nbsp;
         </div>
         <div class="sh__changes">
           {if $item.num_changed_fields == 0}
