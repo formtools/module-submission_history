@@ -68,9 +68,15 @@ function submission_history__uninstall($module_id)
  */
 function submission_history__upgrade($old_version, $new_version)
 {
+  $old_version_info = ft_get_version_info($old_version);
+
   // we made a few changes to the hooks in this version. Wipe out the old and start anew
-  if ($old_version_info["release_date"] < 20110624)
+  if ($old_version_info["release_date"] < 20110731)
   {
+    // somehow, I introduced a bug that indicated the history tables weren't created. Since we're upgrading, we're
+    // going to assume that they are
+    ft_set_settings(array("history_tables_created" => "yes"), "submission_history");
+
     ft_unregister_module_hooks("submission_history");
     sh_register_hooks();
   }

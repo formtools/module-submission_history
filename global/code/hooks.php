@@ -28,7 +28,6 @@ function sh_register_hooks()
   ft_register_hook("code", "submission_history", "start", "ft_update_submission", "sh_hook_update_submission_init");
   ft_register_hook("code", "submission_history", "end", "ft_file_delete_file_submission", "sh_hook_delete_file_submission");
 
-
   // display the submission history on the administrator's Edit Submission page
   ft_register_hook("template", "submission_history", "admin_edit_submission_bottom", "", "sh_hook_display_submission_changelog");
   ft_register_hook("code", "submission_history", "main", "ft_display_page", "sh_hook_include_module_resources");
