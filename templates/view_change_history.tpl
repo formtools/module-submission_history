@@ -50,22 +50,22 @@
           {if $has_previous_entry}
             {if $field_info.field_type == "select"}
               {submission_dropdown name=$field_info.col_name field_id=$field_info.field_id
-                selected=$field_info.new_value is_editable="no"}
+                selected=$field_info.previous_value is_editable="no"}
             {elseif $field_info.field_type == "radio-buttons"}
               {submission_radios name=$field_info.col_name field_id=$field_info.field_id
-                selected=$field_info.new_value is_editable="no"}
+                selected=$field_info.previous_value is_editable="no"}
             {elseif $field_info.field_type == "checkboxes"}
               {submission_checkboxes name=$field_info.col_name field_id=$field_info.field_id
-                selected=$field_info.new_value is_editable="no"}
+                selected=$field_info.previous_value is_editable="no"}
             {elseif $field_info.field_type == "multi-select"}
               {submission_dropdown_multiple name=$field_info.col_name field_id=$field_info.field_id
-                selected=$field_info.new_value is_editable="no"}
+                selected=$field_info.previous_value is_editable="no"}
             {elseif $field_info.field_type == "file"}
-              <span id="field_{$field_id}_link" {if $field_info.new_value == ""}style="display:none"{/if}>
-                {display_file_field field_id=$field_info.field_id filename=$field_info.new_value show_in_new_window=true}
+              <span id="field_{$field_id}_link" {if $field_info.previous_value == ""}style="display:none"{/if}>
+                {display_file_field field_id=$field_info.field_id filename=$field_info.previous_value show_in_new_window=true}
               </span>
             {else}
-              {$field_info.new_value|truncate:100}
+              {$field_info.previous_value|truncate:60}
             {/if}
           {else}
             <span class="light_grey">(no previous version)</span>
@@ -89,7 +89,7 @@
               {display_file_field field_id=$field_info.field_id filename=$field_info.new_value show_in_new_window=true}
             </span>
           {else}
-            {$field_info.new_value|truncate:100}
+            {$field_info.new_value|truncate:60}
           {/if}
         </div>
       </div>
