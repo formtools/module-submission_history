@@ -16,7 +16,7 @@
  */
 function sh_create_history_table($form_id)
 {
-  global $g_table_prefix, $g_field_sizes;
+  global $g_table_prefix;
 
   // this returns all fields in the database table except for is_finalized
   $fields = ft_get_form_fields($form_id);
@@ -39,14 +39,31 @@ function sh_create_history_table($form_id)
   foreach ($fields as $field)
   {
     // don't add system fields (submission ID, date & IP address)
-    if ($field["is_system_field"] == "yes")
+    if ($field["field_type"] == "system")
       continue;
 
-    $new_field_size_sql = $g_field_sizes[$field["field_size"]]["sql"];
-    $query .= "{$field['col_name']} {$new_field_size_sql},\n";
+    $query .= "{$field['col_name']} ";
+    switch ($field["field_size"])
+    {
+      case "tiny":
+        $query .= "VARCHAR(5),\n";
+        break;
+      case "small":
+        $query .= "VARCHAR(20),\n";
+        break;
+      case "medium":
+        $query .= "VARCHAR(255),\n";
+        break;
+      case "large":
+        $query .= "TEXT,\n";
+        break;
+      case "very_large":
+        $query .= "MEDIUMTEXT,\n";
+        break;
+    }
   }
 
-  $query .= "is_finalized ENUM('yes','no') default 'yes') DEFAULT CHARSET=utf8";
+  $query .= "is_finalized ENUM('yes','no') default 'yes') TYPE=MyISAM DEFAULT CHARSET=utf8";
 
   $result = mysql_query($query);
   if (!$result)
@@ -54,7 +71,7 @@ function sh_create_history_table($form_id)
     return array(false, "There was an error creating the form history table: <b>$query</b>");
   }
 
-  return array(true, "The account history table has been created.");
+  return array(true, "The account history table has been created");
 }
 
 
@@ -185,9 +202,6 @@ function sh_add_history_row($form_id, $submission_id, $change_type, $data)
 {
   global $g_table_prefix, $g_sh_debug;
 
-  if (!sh_is_tracking_form($form_id))
-    return;
-
   $now = ft_get_current_datetime();
   list($account_type, $account_id) = sh_get_current_account_info();
 
@@ -213,7 +227,7 @@ function sh_add_history_row($form_id, $submission_id, $change_type, $data)
   // "new" ones are brand new, ergo all/no fields have changed (depending on how you look at it)
   // and "delete"'s are merely removing them, not changing the content
   $changed_fields = array();
-  if ($change_type == "update" || $change_type == "restore" || $change_type == "submission")
+  if ($change_type == "update" || $change_type == "restore")
   {
     $last_history_row_data = sh_get_last_submission_history_row($form_id, $submission_id);
 
@@ -304,7 +318,7 @@ function sh_generate_history_list($info)
   $cached_field_cols_to_titles = array();
   while ($row = mysql_fetch_assoc($query))
   {
-    if (!in_array($row["sh___change_account_id"], $account_ids))
+    if (!in_array($row["sh___change_account_id"]))
       $account_ids[] = $row["sh___change_account_id"];
 
     $row["sh___change_date"] = date($date_format, ft_convert_datetime_to_timestamp($row["sh___change_date"]));
@@ -523,13 +537,14 @@ function sh_generate_change_list($form_id, $history_id)
 {
   global $g_table_prefix, $g_root_dir, $g_smarty_use_sub_dirs, $LANG;
 
-  $history_info = sh_get_history_item($form_id, $history_id);
+  $history_info               = sh_get_history_item($form_id, $history_id);
   $changed_fields = explode(",", $history_info["sh___changed_fields"]);
   $changed_fields[] = "last_modified_date";
   $submission_id = $history_info["submission_id"];
 
   $previous_history_item_info = sh_get_previous_history_item($form_id, $history_id);
   $next_history_item_info     = sh_get_next_history_item($form_id, $history_id);
+
   $submission_info = ft_get_submission($form_id, $submission_id);
 
   $fields = array();
@@ -552,11 +567,8 @@ function sh_generate_change_list($form_id, $history_id)
     {
       if ($field_info["col_name"] == $col)
       {
-        $curr_field_info["field_id"]      = $field_info["field_id"];
-        $curr_field_info["field_type_id"] = $field_info["field_type_id"];
-        $full_field_info = ft_get_form_field($field_info["field_id"], array("include_field_settings" => true));
-
-        $curr_field_info = array_merge($curr_field_info, $full_field_info);
+        $curr_field_info["field_id"] = $field_info["field_id"];
+        $curr_field_info["field_type"] = $field_info["field_type"];
         break;
       }
     }
@@ -583,13 +595,6 @@ function sh_generate_change_list($form_id, $history_id)
   $smarty->assign("previous_history_id", $previous_history_id);
   $smarty->assign("next_history_id", $next_history_id);
   $smarty->assign("has_previous_entry", !empty($previous_history_item_info));
-
-  // some values for the field type
-  $field_types = ft_get_field_types(true);
-  $smarty->assign("form_id", $form_id);
-  $smarty->assign("submission_id", $submission_id);
-  $smarty->assign("field_types", $field_types);
-  $smarty->assign("context", "submission_history_module");
 
   return $smarty->fetch("$g_root_dir/modules/submission_history/templates/view_change_history.tpl");
 }
@@ -698,42 +703,20 @@ function sh_get_num_deleted_submissions($form_id)
 {
   global $g_table_prefix;
 
-  // first, grab all the deleted records
   $query = mysql_query("
-    SELECT submission_id, sh___history_id h1
-    FROM   {$g_table_prefix}form_{$form_id}_history h1
-    WHERE  h1.sh___change_type = 'delete' AND
-      h1.sh___history_id = (
-             SELECT h2.sh___history_id
-             FROM   {$g_table_prefix}form_{$form_id}_history h2
-             WHERE h2.submission_id = h1.submission_id
-             ORDER BY h2.sh___history_id DESC
-             LIMIT 1
-           )
-    ORDER BY h1.sh___history_id DESC
+    SELECT count(*) as c
+    FROM   {$g_table_prefix}form_{$form_id}_history
+    WHERE  sh___change_type = 'delete'
   ");
 
-  // now loop through them all, and get the list of history_ids for ONLY the last deleted version of a file
-  $history_ids = array();
-  $logged_submission_ids = array();
-  while ($row = mysql_fetch_assoc($query))
-  {
-    if (in_array($row["submission_id"], $logged_submission_ids))
-      continue;
-
-    $logged_submission_ids[] = $row["submission_id"];
-    $history_ids[] = $row["sh___history_id"];
-  }
-
-  return count($history_ids);
+  $result = mysql_fetch_assoc($query);
+  return $result["c"];
 }
 
 
 /**
  * Returns a (server-side) paginated list of all submissions in the history table, marked as deleted. The
- * UI provides a simple, basic UI to browse deleted submissions and undelete them. Since a single submission
- * may be deleted multiple times, this function only returns submissions that have their LAST entry marked as
- * deleted.
+ * UI provides a simple, basic UI to browse deleted submissions and undelete them.
  *
  * @param integer $form_id
  * @param integer $page
@@ -773,68 +756,29 @@ function sh_get_deleted_submissions($form_id, $page = 1, $search = "")
     $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
   }
 
-  // first, grab all log entries marked as deleted that DON'T have any newer entries
+  // our main search query
   $query = mysql_query("
     SELECT *
-    FROM   {$g_table_prefix}form_{$form_id}_history h1
-    WHERE  h1.sh___change_type = 'delete' AND
-           h1.sh___history_id = (
-             SELECT h2.sh___history_id
-             FROM   {$g_table_prefix}form_{$form_id}_history h2
-             WHERE h2.submission_id = h1.submission_id
-             ORDER BY h2.sh___history_id DESC
-             LIMIT 1
-           )
+    FROM   {$g_table_prefix}form_{$form_id}_history
+    WHERE  sh___change_type = 'delete'
+           $search_clause
     ORDER BY sh___history_id DESC
+    $limit_clause
   ");
 
-
-  // now loop through them all, and get the list of history_ids for ONLY the last deleted version of a file
-  $history_ids = array();
-  $logged_submission_ids = array();
+  $info = array();
   while ($row = mysql_fetch_assoc($query))
-  {
-    if (in_array($row["submission_id"], $logged_submission_ids))
-      continue;
+    $info[] = $row;
 
-    $logged_submission_ids[] = $row["submission_id"];
-    $history_ids[] = $row["sh___history_id"];
-  }
+  $count_result = mysql_query("
+    SELECT count(*) as c
+    FROM   {$g_table_prefix}form_{$form_id}_history
+    WHERE  sh___change_type = 'delete'
+  ");
+  $count_hash = mysql_fetch_assoc($count_result);
 
-  $history_id_str = implode(",", $history_ids);
-
-  // now do our main query, including the searches, etc
-  if (empty($history_ids))
-  {
-    $return_hash["results"]     = array();
-    $return_hash["num_results"] = 0;
-  }
-  else
-  {
-    $query = mysql_query("
-      SELECT *
-      FROM   {$g_table_prefix}form_{$form_id}_history
-      WHERE  sh___change_type = 'delete' AND
-             sh___history_id IN ($history_id_str)
-             $search_clause
-      ORDER BY sh___history_id DESC
-             $limit_clause
-    ");
-
-    $info = array();
-    while ($row = mysql_fetch_assoc($query))
-      $info[] = $row;
-
-    $count_result = mysql_query("
-      SELECT count(*) as c
-      FROM   {$g_table_prefix}form_{$form_id}_history
-      WHERE  sh___change_type = 'delete'
-    ");
-    $count_hash = mysql_fetch_assoc($count_result);
-
-    $return_hash["results"]     = $info;
-    $return_hash["num_results"] = $count_hash["c"];
-  }
+  $return_hash["results"]     = $info;
+  $return_hash["num_results"] = $count_hash["c"];
 
   return $return_hash;
 }

@@ -38,8 +38,6 @@ $previous_history_id = sh_get_previous_deleted_submission($form_id, $info);
 $next_history_id     = sh_get_next_deleted_submission($form_id, $info);
 
 
-$deleted_submissions = sh_get_deleted_submissions($form_id, $page, $search);
-
 // ------------------------------------------------------------------------------------------------
 
 $page_vars = array();

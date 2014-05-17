@@ -48,16 +48,49 @@
         <div class="sh__field_name">{$field_info.field_name}</div>
         <div class="sh__previous_value">
           {if $has_previous_entry}
-            {display_custom_field form_id=$form_id submission_id=$submission_id field_info=$field_info
-              field_types=$field_types value=$field_info.previous_value settings=$field_info.settings context=$context}
-              &nbsp;
+            {if $field_info.field_type == "select"}
+              {submission_dropdown name=$field_info.col_name field_id=$field_info.field_id
+                selected=$field_info.new_value is_editable="no"}
+            {elseif $field_info.field_type == "radio-buttons"}
+              {submission_radios name=$field_info.col_name field_id=$field_info.field_id
+                selected=$field_info.new_value is_editable="no"}
+            {elseif $field_info.field_type == "checkboxes"}
+              {submission_checkboxes name=$field_info.col_name field_id=$field_info.field_id
+                selected=$field_info.new_value is_editable="no"}
+            {elseif $field_info.field_type == "multi-select"}
+              {submission_dropdown_multiple name=$field_info.col_name field_id=$field_info.field_id
+                selected=$field_info.new_value is_editable="no"}
+            {elseif $field_info.field_type == "file"}
+              <span id="field_{$field_id}_link" {if $field_info.new_value == ""}style="display:none"{/if}>
+                {display_file_field field_id=$field_info.field_id filename=$field_info.new_value show_in_new_window=true}
+              </span>
+            {else}
+              {$field_info.new_value|truncate:100}
+            {/if}
           {else}
             <span class="light_grey">(no previous version)</span>
           {/if}
         </div>
         <div class="sh__new_value">
-          {display_custom_field form_id=$form_id submission_id=$submission_id field_info=$field_info
-            field_types=$field_types value=$field_info.new_value settings=$field_info.settings context=$context}
+          {if $field_info.field_type == "select"}
+            {submission_dropdown name=$field_info.col_name field_id=$field_info.field_id
+              selected=$field_info.new_value is_editable="no"}
+          {elseif $field_info.field_type == "radio-buttons"}
+            {submission_radios name=$field_info.col_name field_id=$field_info.field_id
+              selected=$field_info.new_value is_editable="no"}
+          {elseif $field_info.field_type == "checkboxes"}
+            {submission_checkboxes name=$field_info.col_name field_id=$field_info.field_id
+              selected=$field_info.new_value is_editable="no"}
+          {elseif $field_info.field_type == "multi-select"}
+            {submission_dropdown_multiple name=$field_info.col_name field_id=$field_info.field_id
+              selected=$field_info.new_value is_editable="no"}
+          {elseif $field_info.field_type == "file"}
+            <span id="field_{$field_id}_link" {if $field_info.new_value == ""}style="display:none"{/if}>
+              {display_file_field field_id=$field_info.field_id filename=$field_info.new_value show_in_new_window=true}
+            </span>
+          {else}
+            {$field_info.new_value|truncate:100}
+          {/if}
         </div>
       </div>
       <div style="clear: both"></div>

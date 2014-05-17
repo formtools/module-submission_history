@@ -7,7 +7,27 @@ function submission_history__install()
 {
   global $g_table_prefix;
 
-  sh_register_hooks();
+  // these hook shadow the core functions so that any time the form tables change, the history table columns
+  // are also updated accordingly
+  ft_register_hook("code", "submission_history", "end", "ft_add_form_fields", "sh_hook_add_form_fields");
+  ft_register_hook("code", "submission_history", "end", "ft_delete_form_fields", "sh_hook_delete_form_fields");
+  ft_register_hook("code", "submission_history", "end", "ft_update_form_database_tab", "sh_hook_update_form_database_tab");
+  ft_register_hook("code", "submission_history", "end", "ft_finalize_form", "sh_hook_finalize_form");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_form", "sh_hook_delete_form");
+
+  // submissions
+  ft_register_hook("code", "submission_history", "end", "ft_create_blank_submission", "sh_hook_create_blank_submission");
+  ft_register_hook("code", "submission_history", "end", "ft_process_form", "sh_hook_process_form");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_submission", "sh_hook_delete_submission");
+  ft_register_hook("code", "submission_history", "start", "ft_delete_submissions", "sh_hook_delete_submissions");
+  ft_register_hook("code", "submission_history", "end", "ft_update_submission", "sh_hook_update_submission");
+  ft_register_hook("code", "submission_history", "start", "ft_update_submission", "sh_hook_update_submission_init");
+  ft_register_hook("code", "submission_history", "end", "ft_delete_file_submission", "sh_hook_delete_file_submission");
+
+  // display the submission history on the administrator's Edit Submission page
+  ft_register_hook("template", "submission_history", "admin_edit_submission_bottom", "", "sh_hook_display_submission_changelog");
+  ft_register_hook("code", "submission_history", "main", "ft_display_page", "sh_hook_include_module_resources");
+
 
   // our create table query
   $queries = array();
@@ -58,29 +78,3 @@ function submission_history__uninstall($module_id)
 
   return array(true, "");
 }
-
-/**
- * Our upgrade function.
- *
- * @param array $old_version
- * @param array $new_version
- */
-function submission_history__update($old_version_info, $new_version_info)
-{
-  $old_version_date = date("Ymd", ft_convert_datetime_to_timestamp($old_version_info["module_date"]));
-
-  if ($old_version_date < 20110731)
-  {
-    // somehow, I introduced a bug that indicated the history tables weren't created. Since we're upgrading, we're
-    // going to assume that they are
-    ft_set_settings(array("history_tables_created" => "yes"), "submission_history");
-  }
-
-  ft_unregister_module_hooks("submission_history");
-  sh_register_hooks();
-
-  return array(true, "");
-}
-
-
-
