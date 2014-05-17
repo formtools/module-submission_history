@@ -78,6 +78,8 @@ function submission_history__update($old_version_info, $new_version_info)
 
   ft_unregister_module_hooks("submission_history");
   sh_register_hooks();
+
+  return array(true, "");
 }
 
 
