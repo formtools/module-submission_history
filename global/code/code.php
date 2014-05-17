@@ -202,6 +202,9 @@ function sh_add_history_row($form_id, $submission_id, $change_type, $data)
 {
   global $g_table_prefix, $g_sh_debug;
 
+  if (!sh_is_tracking_form($form_id))
+    return;
+
   $now = ft_get_current_datetime();
   list($account_type, $account_id) = sh_get_current_account_info();
 
