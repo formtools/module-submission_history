@@ -1,50 +1,64 @@
 <?php
 
 require_once("../../global/library.php");
-ft_init_module_page();
 
-if (isset($_POST["update_activity_tracking"]))
-  list($g_success, $g_message) = sh_update_activity_tracking($_POST);
-else if (isset($_GET["clear_logs"]))
-  list($g_success, $g_message) = sh_clear_form_logs($_GET["clear_logs"]);
-else if (isset($_POST["clear_all_logs"]))
-  list($g_success, $g_message) = sh_clear_all_form_logs();
+use FormTools\Core;
+use FormTools\Forms;
+use FormTools\Modules;
+use FormTools\Modules\SubmissionHistory\Code;
 
-$module_settings = ft_get_module_settings();
-$history_table_info = sh_get_history_table_info();
-$all_forms = ft_get_forms();
+$module = Modules::initModulePage("admin");
+$root_url = Core::getRootUrl();
+$L = $module->getLangStrings();
 
-$forms    = array();
+$success = true;
+$message = "";
+if (isset($_POST["update_activity_tracking"])) {
+    list($success, $message) = Code::updateActivityTracking($_POST);
+} else if (isset($_GET["clear_logs"])) {
+    list($success, $message) = Code::clearFormLogs($_GET["clear_logs"]);
+} else if (isset($_POST["clear_all_logs"])) {
+    list($success, $message) = Code::clearAllFormLogs();
+}
+
+$module_settings = $module->getSettings();
+$history_table_info = Code::getHistoryTableInfo();
+$all_forms = Forms::getForms();
+
+$forms = array();
 $form_ids = array();
-foreach ($all_forms as $form_info)
-{
-  if ($form_info["is_complete"] == "no")
-    continue;
+$table_prefix = Core::getDbTablePrefix();
 
-  $form_id = $form_info["form_id"];
-  $form_ids[] = $form_id;
+foreach ($all_forms as $form_info) {
+    if ($form_info["is_complete"] == "no") {
+        continue;
+    }
 
-  // once the history tables have been created, there should ALWAYS be a key here
-  if (array_key_exists("{$g_table_prefix}form_{$form_id}_history", $history_table_info))
-  {
-    $form_info["history_table_size"] = round($history_table_info["{$g_table_prefix}form_{$form_id}_history"]["size"]);
-    $form_info["history_table_rows"] = $history_table_info["{$g_table_prefix}form_{$form_id}_history"]["rows"];
-    $form_info["num_deleted_submissions"] = sh_get_num_deleted_submissions($form_id);
-  }
+    $form_id = $form_info["form_id"];
+    $form_ids[] = $form_id;
 
-  $forms[] = $form_info;
+    // once the history tables have been created, there should ALWAYS be a key here
+    if (array_key_exists("{$table_prefix}form_{$form_id}_history", $history_table_info)) {
+        $form_info["history_table_size"] = round($history_table_info["{$table_prefix}form_{$form_id}_history"]["size"]);
+        $form_info["history_table_rows"] = $history_table_info["{$table_prefix}form_{$form_id}_history"]["rows"];
+        $form_info["num_deleted_submissions"] = Code::getNumDeletedSubmissions($form_id);
+    }
+
+    $forms[] = $form_info;
 }
 $form_ids_str = implode(",", $form_ids);
 
-// ------------------------------------------------------------------------------------------------
+$page_vars = array(
+    "g_success" => $success,
+    "g_message" => $message,
+    "forms" => $forms,
+    "module_settings" => $module_settings,
+    "configured_form_ids" => explode(",", $module_settings["tracked_form_ids"])
+);
 
-$page_vars = array();
-$page_vars["forms"] = $forms;
-$page_vars["module_settings"] = $module_settings;
-$page_vars["configured_form_ids"] = explode(",", $module_settings["tracked_form_ids"]);
-$page_vars["head_js"] =<<< EOF
+$page_vars["head_js"] = <<< END
 var page_ns = {
-  url:      "{$g_root_url}/modules/submission_history/global/code/actions.php",
+  url:      "{$root_url}/modules/submission_history/code/actions.php",
   form_ids: [$form_ids_str],
   history_tables_created: false,
 
@@ -124,7 +138,6 @@ var page_ns = {
     }
   }
 }
+END;
 
-EOF;
-
-ft_display_module_page("templates/index.tpl", $page_vars);
+$module->displayPage("templates/index.tpl", $page_vars);

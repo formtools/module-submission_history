@@ -18,4 +18,4 @@ $MODULE["nav"] = array(
   "module_name"   => array('{$module_dir}/index.php', false),
   "word_settings" => array('{$module_dir}/settings.php', true),
   "word_help"     => array('{$module_dir}/help.php', true)
-    );
+);

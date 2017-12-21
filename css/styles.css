@@ -1,0 +1,105 @@
+div#sh__content {
+  padding: 4px 8px 4px;
+  margin-top: 16px;
+  width: 723px;
+}
+div#sh__page_label {
+  font-size: 8pt;
+  color: #1a6696;
+  margin-left: 2px;
+}
+div#sh__loading, div#sh__load_history {
+  float: right;
+  margin: 0px;
+}
+div#sh__results_div ul {
+  margin-left: 0px;
+  padding-left: 0px;
+  list-style: none;
+}
+div#sh__pagination {
+  float: right;
+  margin-top: -30px;
+}
+div#sh__results_div ul li {
+  border-bottom: 1px solid #cccccc;
+  padding: 2px;
+}
+div#sh__results_div ul li:hover {
+  background-color: #efefef;
+}
+div#sh__results_div ul div.sh__date {
+  float: left;
+  width: 160px;
+}
+div#sh__results_div ul div.sh__change_type {
+  float: left;
+  width: 100px;
+}
+div#sh__results_div div.sh__changed_by {
+  float: left;
+  width: 160px;
+}
+div#sh__results_div div.sh__view_change {
+  float: right;
+  width: 60px;
+}
+div.sh__changes {
+  float: left;
+  width: 210px;
+}
+div.sh__changes select {
+  width: 100%;
+}
+.change_type_new {
+  color: #005900;
+}
+.change_type_update {
+  color: #0066cc;
+}
+.change_type_restore {
+  color: orange;
+}
+.change_type_original {
+  color: #269200;
+}
+.change_type_undelete {
+  color: #4babe7;
+}
+.change_type_delete {
+  color: red;
+}
+.change_type_submission {
+  color: purple;
+}
+.no_changed_fields {
+  color: #999999;
+}
+.sh__field_name {
+  float: left;
+  width: 190px;
+}
+.sh__previous_value {
+  float: left;
+  width: 255px;
+  max-height: 80px;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+}
+.sh__new_value {
+  float: left;
+  width: 255px;
+  max-height: 80px;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+}
+div#sh__results_div li.changed_field {
+  background-color: #ffffaa;
+}
+.change_type_info {
+  -moz-border-radius: 6px;
+  border-radius: 6px;
+  background-color: #DAE9F2;
+  padding: 2px 6px;
+  width: 100%;
+}

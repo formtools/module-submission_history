@@ -116,8 +116,8 @@ $L["confirm_clear_form_logs"] = "Are you sure you want to clear the logs for thi
 $L["text_settings_page"] = "This page contains all configuration options for the Submission History module. If you have any questions about what each setting does, please see this page in the <a href=\"http://modules.formtools.org/submission_history/documentation.php?page=settings\" target=\"_blank\">user documentation</a>.";
 $L["text_module_intro"] = "To get started, click the button below to create the history tables for your forms. You will be able to configure which forms you would like to track activity on in the next step.";
 $L["text_modified_rows_highlighted"] = "Fields that were modified from the previous version are highlighted in yellow. To restore the data from this version, click the button below.";
-$L["text_help"] = "Please see our <a href=\"http://modules.formtools.org/submission_history/documentation.php\" target=\"_blank\">online help documentation</a> for information on how to use this module.";
-$L["text_tracking_table"] = "The table below lists all your forms and provides a little information and control over what's being tracked. Please see the <a href=\"http://modules.formtools.org/submission_history/documentation.php\" target=\"_blank\">help documentation</a> for information on this page.";
+$L["text_help"] = "Please see our <a href=\"https://docs.formtools.org/modules/submission_history/\" target=\"_blank\">online help documentation</a> for information on how to use this module.";
+$L["text_tracking_table"] = "The table below lists all your forms and provides a little information and control over what's being tracked. Please see the <a href=\"https://docs.formtools.org/modules/submission_history/\" target=\"_blank\">help documentation</a> for information on this page.";
 $L["text_undelete_page"] = "This page lists all submissions that were deleted in the database. Click on the VIEW link to view the submission details and to undelete it. The search field searchs all fields in the database for whatever string you enter.";
 
 

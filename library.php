@@ -2,8 +2,7 @@
 
 $g_sh_debug = true;
 
-$folder = dirname(__FILE__);
-require_once("$folder/global/code/code.php");
-require_once("$folder/global/code/general.php");
-require_once("$folder/global/code/module.php");
-require_once("$folder/global/code/hooks.php");
+require_once(__DIR__ . "/code/Code.class.php");
+require_once(__DIR__ . "/code/General.class.php");
+require_once(__DIR__ . "/code/Module.class.php");
+
