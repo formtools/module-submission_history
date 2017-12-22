@@ -44,7 +44,7 @@ switch ($_POST["action"]) {
         break;
 
     case "clear_submission_log":
-        echo sh_clear_submission_log($_POST["form_id"], $_POST["submission_id"]);
+        echo Code::clearSubmissionLog($_POST["form_id"], $_POST["submission_id"]);
         break;
 }
 

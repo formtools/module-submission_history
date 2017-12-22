@@ -14,11 +14,11 @@ $L = $module->getLangStrings();
 $success = true;
 $message = "";
 if (isset($_POST["update_activity_tracking"])) {
-    list($success, $message) = Code::updateActivityTracking($_POST);
+    list($success, $message) = Code::updateActivityTracking($_POST, $L);
 } else if (isset($_GET["clear_logs"])) {
-    list($success, $message) = Code::clearFormLogs($_GET["clear_logs"]);
+    list($success, $message) = Code::clearFormLogs($_GET["clear_logs"], $L);
 } else if (isset($_POST["clear_all_logs"])) {
-    list($success, $message) = Code::clearAllFormLogs();
+    list($success, $message) = Code::clearAllFormLogs($L);
 }
 
 $module_settings = $module->getSettings();

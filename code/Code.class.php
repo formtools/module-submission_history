@@ -190,8 +190,9 @@ class Code
 
     public static function updateActivityTracking($info, $L)
     {
+        $tracked_form_ids = isset($info["tracked_form_ids"]) ? implode(",", $info["tracked_form_ids"]) : "";
         Modules::setModuleSettings(array(
-            "tracked_form_ids" => implode(",", $info["tracked_form_ids"])
+            "tracked_form_ids" => $tracked_form_ids
         ));
 
         return array(true, $L["notify_activity_tracking_updated"]);
