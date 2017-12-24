@@ -6,9 +6,11 @@ use FormTools\Core;
 use FormTools\Fields;
 use FormTools\FieldSizes;
 use FormTools\FieldTypes;
+use FormTools\Files;
 use FormTools\Forms;
 use FormTools\General as CoreGeneral;
 use FormTools\Modules;
+use FormTools\Settings;
 use FormTools\Submissions;
 
 use PDO, Exception, Smarty;
@@ -216,6 +218,10 @@ class Code
     public static function addHistoryRow($form_id, $submission_id, $change_type, $data)
     {
         $db = Core::$db;
+
+        if (empty($data)) {
+            return;
+        }
 
         if (!General::isTrackingForm($form_id)) {
             return;
@@ -650,47 +656,60 @@ class Code
 
         $history_info = self::getHistoryItem($form_id, $history_id);
         $submission_id = $history_info["submission_id"];
+        $file_type_id = FieldTypes::getFieldTypeIdByIdentifier("file");
 
-        $pairs = array();
-        while (list($col, $value) = each($history_info)) {
-            // ignore any special fields, or the last_modified_date
-            if (in_array($col, array(
+        $pairs = array("submission_id" => $submission_id);
+        $col_names = array();
+        foreach ($history_info as $col_name => $value) {
+
+            // ignore any special fields
+            if (in_array($col_name, array(
                 "sh___change_date",
                 "sh___change_type",
                 "sh___change_account_type",
                 "sh___change_account_id",
                 "sh___changed_fields",
                 "sh___history_id",
-                "last_modified_date"
+                "last_modified_date",
+                "is_finalized",
+                "submission_id"
             ))) {
                 continue;
             }
 
-            $field_info = Fields::getFormFieldByColname($form_id, $col);
+            $field_info = Fields::getFormFieldByColname($form_id, $col_name);
 
+            if (empty($field_info)) {
+                echo $col_name;
+            }
             // if this is a file, check the file still exists
-            if ($field_info["field_type"] == "file") {
-                $field_info = Fields::getFormField($field_info["field_id"]);
-                $extended_field_info = Fields::getExtendedFieldSettings($field_info["field_id"]);
-                $file_upload_dir = $extended_field_info["file_upload_dir"];
-
+            if ($field_info["field_type_id"] == $file_type_id) {
+                $settings = Fields::getFieldSettings($field_info["field_id"]);
+                $file_upload_dir = $settings["folder_path"];
                 if (!is_file("$file_upload_dir/$value")) {
                     $value = "";
                 }
             }
 
-            $pairs[$col] = $value;
+            $col_names[] = $col_name;
+            $pairs[$col_name] = $value;
         }
 
         // this should always run, but wrap it in an if-statement, just in case
         if (!empty($pairs)) {
-            $pairs_str = implode(",\n", array_keys($pairs));
+            $set_clauses = array();
+            foreach ($col_names as $col_name) {
+                $set_clauses[] = "$col_name = :$col_name";
+            }
+            $set_clauses_str = implode(", ", $set_clauses);
 
             $db->query("
                 UPDATE {PREFIX}form_{$form_id}
-                SET    $pairs_str
-                WHERE  submission_id = $submission_id
+                SET    $set_clauses_str
+                WHERE  submission_id = :submission_id
             ");
+            $db->bindAll($pairs);
+            $db->execute();
 
             // now create a new history row and set it as as "restore"
             $submission_info = Submissions::getSubmissionInfo($form_id, $submission_id);
@@ -752,7 +771,7 @@ class Code
 
         // first, grab all the deleted records
         $db->query("
-            SELECT submission_id, sh___history_id h1
+            SELECT submission_id, sh___history_id
             FROM   {PREFIX}form_{$form_id}_history h1
             WHERE  h1.sh___change_type = 'delete' AND
                    h1.sh___history_id = (
@@ -794,6 +813,7 @@ class Code
      */
     public static function getDeletedSubmissions($form_id, $page = 1, $search = "")
     {
+        $db = Core::$db;
         $module_settings = Modules::getModuleSettings("", "submission_history");
         $per_page = $module_settings["num_deleted_submissions_per_page"];
 
@@ -801,9 +821,9 @@ class Code
         $first_item = ($page - 1) * $per_page;
         $limit_clause = "LIMIT $first_item, $per_page";
 
-        $search = ft_sanitize($search);
-
         $search_clause = "";
+        $query_map = array();
+
         if (!empty($search)) {
             $history_table_col_names = General::getHistoryTableColNames($form_id);
 
@@ -816,32 +836,36 @@ class Code
             array_splice($history_table_col_names, array_search("sh___changed_fields", $history_table_col_names), 1);
 
             foreach ($history_table_col_names as $col_name) {
-                $search_clauses[] = "$col_name LIKE '%$search%'";
+                $query_map[$col_name] = "%$search%";
+                $search_clauses[] = "$col_name LIKE :$col_name";
             }
 
-            $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            if (!empty($search_clauses)) {
+                $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            }
         }
 
-        // first, grab all log entries marked as deleted that DON'T have any newer entries
-        $query = mysql_query("
-    SELECT *
-    FROM   {PREFIX}form_{$form_id}_history h1
-    WHERE  h1.sh___change_type = 'delete' AND
-           h1.sh___history_id = (
-             SELECT h2.sh___history_id
-             FROM   {PREFIX}form_{$form_id}_history h2
-             WHERE h2.submission_id = h1.submission_id
-             ORDER BY h2.sh___history_id DESC
-             LIMIT 1
-           )
-    ORDER BY sh___history_id DESC
-  ");
 
+        // first, grab all log entries marked as deleted that DON'T have any newer entries
+        $db->query("
+            SELECT *
+            FROM   {PREFIX}form_{$form_id}_history h1
+            WHERE  h1.sh___change_type = 'delete' AND
+                   h1.sh___history_id = (
+                       SELECT h2.sh___history_id
+                       FROM   {PREFIX}form_{$form_id}_history h2
+                       WHERE h2.submission_id = h1.submission_id
+                       ORDER BY h2.sh___history_id DESC
+                       LIMIT 1
+                   )
+            ORDER BY sh___history_id DESC
+        ");
+        $db->execute();
 
         // now loop through them all, and get the list of history_ids for ONLY the last deleted version of a file
         $history_ids = array();
         $logged_submission_ids = array();
-        while ($row = mysql_fetch_assoc($query)) {
+        foreach ($db->fetchAll() as $row) {
             if (in_array($row["submission_id"], $logged_submission_ids)) {
                 continue;
             }
@@ -854,47 +878,50 @@ class Code
 
         // now do our main query, including the searches, etc
         if (empty($history_ids)) {
-            $return_hash["results"] = array();
-            $return_hash["num_results"] = 0;
-        } else {
-            $query = mysql_query("
-      SELECT *
-      FROM   {PREFIX}form_{$form_id}_history
-      WHERE  sh___change_type = 'delete' AND
-             sh___history_id IN ($history_id_str)
-             $search_clause
-      ORDER BY sh___history_id DESC
-             $limit_clause
-    ");
-
-            $info = array();
-            while ($row = mysql_fetch_assoc($query)) {
-                $info[] = $row;
-            }
-
-            $count_result = mysql_query("
-      SELECT count(*) as c
-      FROM   {PREFIX}form_{$form_id}_history
-      WHERE  sh___change_type = 'delete'
-    ");
-            $count_hash = mysql_fetch_assoc($count_result);
-
-            $return_hash["results"] = $info;
-            $return_hash["num_results"] = $count_hash["c"];
+            return array(
+                "results" => array(),
+                "num_results" => 0
+            );
         }
 
-        return $return_hash;
+        $db->query("
+            SELECT *
+            FROM   {PREFIX}form_{$form_id}_history
+            WHERE  sh___change_type = 'delete' AND
+                   sh___history_id IN ($history_id_str)
+                   $search_clause
+            ORDER BY sh___history_id DESC
+            $limit_clause
+        ");
+
+        $db->bindAll($query_map);
+        $db->execute();
+        $results = $db->fetchAll();
+
+        $db->query("
+            SELECT count(*)
+            FROM   {PREFIX}form_{$form_id}_history
+            WHERE  sh___change_type = 'delete'
+        ");
+        $db->execute();
+
+        return array(
+            "results" => $results,
+            "num_results" => $db->fetch(PDO::FETCH_COLUMN)
+        );
     }
 
 
     public static function getPreviousDeletedSubmission($form_id, $info)
     {
+        $db = Core::$db;
         $history_id = $info["history_id"];
 
+        $query_map = array();
         $search_clause = "";
+
         if (!empty($info["search"])) {
-            $search = ft_sanitize($info["search"]);
-            $history_table_col_names = sh_get_history_table_col_names($form_id);
+            $history_table_col_names = General::getHistoryTableColNames($form_id);
 
             // remove all the Submission History-specific tables so we can do a clean comparison
             array_splice($history_table_col_names, array_search("sh___history_id", $history_table_col_names), 1);
@@ -905,13 +932,16 @@ class Code
             array_splice($history_table_col_names, array_search("sh___changed_fields", $history_table_col_names), 1);
 
             foreach ($history_table_col_names as $col_name) {
-                $search_clauses[] = "$col_name LIKE '%$search%'";
+                $query_map[$col_name] = "%{$info["search"]}%";
+                $search_clauses[] = "$col_name LIKE :$col_name";
             }
 
-            $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            if (!empty($search_clauses)) {
+                $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            }
         }
 
-        $query = mysql_query("
+        $db->query("
             SELECT sh___history_id
             FROM   {PREFIX}form_{$form_id}_history
             WHERE  sh___change_type = 'delete' AND
@@ -920,51 +950,55 @@ class Code
             ORDER BY sh___history_id DESC
             LIMIT 1
         ");
-        $result = mysql_fetch_assoc($query);
+        $db->bindAll($query_map);
+        $db->execute();
 
-        return (!empty($result["sh___history_id"])) ? $result["sh___history_id"] : "";
+        return $db->fetch(PDO::FETCH_COLUMN);
     }
 
 
-    function sh_get_next_deleted_submission($form_id, $info)
+    public static function getNextDeletedSubmission($form_id, $info)
     {
-        global $g_table_prefix;
+        $db = Core::$db;
 
         $history_id = $info["history_id"];
 
+        $query_map = array();
         $search_clause = "";
         if (!empty($info["search"])) {
-            $search = ft_sanitize($info["search"]);
-            $history_table_col_names = sh_get_history_table_col_names($form_id);
+            $history_table_col_names = General::getHistoryTableColNames($form_id);
 
             // remove all the Submission History-specific tables so we can do a clean comparison
             array_splice($history_table_col_names, array_search("sh___history_id", $history_table_col_names), 1);
             array_splice($history_table_col_names, array_search("sh___change_date", $history_table_col_names), 1);
             array_splice($history_table_col_names, array_search("sh___change_type", $history_table_col_names), 1);
-            array_splice($history_table_col_names, array_search("sh___change_account_type", $history_table_col_names),
-            1);
+            array_splice($history_table_col_names, array_search("sh___change_account_type", $history_table_col_names), 1);
             array_splice($history_table_col_names, array_search("sh___change_account_id", $history_table_col_names), 1);
             array_splice($history_table_col_names, array_search("sh___changed_fields", $history_table_col_names), 1);
 
             foreach ($history_table_col_names as $col_name) {
-                $search_clauses[] = "$col_name LIKE '%$search%'";
+                $query_map[$col_name] = "%{$info["search"]}%";
+                $search_clauses[] = "$col_name LIKE :$col_name";
             }
 
-            $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            if (!empty($search_clauses)) {
+                $search_clause = "AND (" . implode(" OR ", $search_clauses) . ")";
+            }
         }
 
-        $query = mysql_query("
-    SELECT sh___history_id
-    FROM   {PREFIX}form_{$form_id}_history
-    WHERE  sh___change_type = 'delete' AND
-           sh___history_id > $history_id
-           $search_clause
-    ORDER BY sh___history_id ASC
-    LIMIT 1
-  ");
-        $result = mysql_fetch_assoc($query);
+        $db->query("
+            SELECT sh___history_id
+            FROM   {PREFIX}form_{$form_id}_history
+            WHERE  sh___change_type = 'delete' AND
+            sh___history_id > $history_id
+            $search_clause
+            ORDER BY sh___history_id ASC
+            LIMIT 1
+        ");
+        $db->bindAll($query_map);
+        $db->execute();
 
-        return (!empty($result["sh___history_id"])) ? $result["sh___history_id"] : "";
+        return $db->fetch(PDO::FETCH_COLUMN);
     }
 
 
@@ -974,40 +1008,46 @@ class Code
      * @param integer $form_id
      * @param integer $history_id
      */
-    function sh_undelete_submission($form_id, $history_id)
+    public static function undeleteSubmission($form_id, $history_id, $L)
     {
-        global $g_table_prefix, $L;
+        $db = Core::$db;
 
-        $submission_id = sh_get_history_submission_id($form_id, $history_id);
-        $data = sh_get_last_submission_history_row($form_id, $submission_id);
+        $submission_id = General::getHistorySubmissionId($form_id, $history_id);
+        $data = self::getLastSubmissionHistoryRow($form_id, $submission_id);
 
+        $columns = array();
+        $pairs = array();
         while (list($col, $value) = each($data)) {
             // ignore any special fields, or the last_modified_date
             if (in_array($col, array(
-            "sh___change_date",
-            "sh___change_type",
-            "sh___change_account_type",
-            "sh___change_account_id",
-            "sh___changed_fields",
-            "sh___history_id"
+                "sh___change_date",
+                "sh___change_type",
+                "sh___change_account_type",
+                "sh___change_account_id",
+                "sh___changed_fields",
+                "sh___history_id"
             ))) {
                 continue;
             }
 
-            $col_values[$col] = "'" . ft_sanitize($value) . "'";
+            $columns[$col] = ":$col";
+            $pairs[$col] = $value;
         }
 
-        $col_names = implode(",", array_keys($col_values));
-        $values = implode(",", array_values($col_values));
+        $col_names = implode(",", array_keys($columns));
+        $placeholders = implode(",", array_values($columns));
 
-        $query = "INSERT INTO {PREFIX}form_{$form_id} ($col_names) VALUES ($values)";
-        $result = @mysql_query($query);
-        if ($query) {
-            $submission_info = ft_get_submission_info($form_id, $submission_id);
-            sh_add_history_row($form_id, $submission_id, "undelete", $submission_info);
-            return array(true, $L["notify_submission_undeleted"]);
-        } else {
-            return array(true, $L["notify_submission_not_undeleted"]);
+        try {
+            $db->query("INSERT INTO {PREFIX}form_{$form_id} ($col_names) VALUES ($placeholders)");
+            $db->bindAll($pairs);
+            $db->execute();
+
+            $submission_info = Submissions::getSubmissionInfo($form_id, $submission_id);
+            self::addHistoryRow($form_id, $submission_id, "undelete", $submission_info);
+        } catch (Exception $e) {
+            return array(false, $L["notify_submission_not_undeleted"]);
         }
+
+        return array(true, $L["notify_submission_undeleted"]);
     }
 }

@@ -4,6 +4,7 @@ namespace FormTools\Modules\SubmissionHistory;
 
 use FormTools\Core;
 use FormTools\Fields;
+use FormTools\FieldSizes;
 use FormTools\Forms;
 use FormTools\General as CoreGeneral;
 use FormTools\Hooks;
@@ -22,11 +23,8 @@ class Module extends FormToolsModule
     protected $authorEmail = "ben.keen@gmail.com";
     protected $authorLink = "https://formtools.org";
     protected $version = "2.0.0";
-    protected $date = "2017-12-15";
+    protected $date = "2017-12-23";
     protected $originLanguage = "en_us";
-
-//    protected $jsFiles = array("scripts/tests.js");
-//    protected $cssFiles = array("css/styles.css");
 
     protected $nav = array(
         "module_name"   => array("index.php", false),
@@ -82,7 +80,7 @@ class Module extends FormToolsModule
     {
         // these hook shadow the core functions so that any time the form tables change, the history table columns
         // are also updated accordingly
-        Hooks::registerHook("code", "submission_history", "end", "FormTools\\Fields::addFormFields", "hookAddFormFields");
+        Hooks::registerHook("code", "submission_history", "end", "FormTools\\Fields::addFormFieldsAdvanced", "hookAddFormFields");
         Hooks::registerHook("code", "submission_history", "end", "FormTools\\Fields::deleteFormFields", "hookDeleteFormFields");
         Hooks::registerHook("code", "submission_history", "end", "FormTools\\Forms::finalizeForm", "hookFinalizeForm");
         Hooks::registerHook("code", "submission_history", "start", "FormTools\\Forms::deleteForm", "hookDeleteForm");
@@ -95,7 +93,7 @@ class Module extends FormToolsModule
         Hooks::registerHook("code", "submission_history", "start", "FormTools\\Submissions::deleteSubmissions", "hookDeleteSubmissions");
         Hooks::registerHook("code", "submission_history", "end", "FormTools\\Submissions::updateSubmission", "hookUpdateSubmission");
         Hooks::registerHook("code", "submission_history", "start", "FormTools\\Submissions::updateSubmission", "hookUpdateSubmissionInit");
-        Hooks::registerHook("code", "submission_history", "end", "FormTools\\Modules\\FieldTypeFile::deleteFileSubmission", "hookDeleteFileSubmission");
+        Hooks::registerHook("code", "submission_history", "end", "FormTools\\Modules\\FieldTypeFile\\Module->deleteFileSubmission", "hookDeleteFileSubmission");
 
         // display the submission history on the administrator's Edit Submission page
         Hooks::registerHook("template", "submission_history", "admin_edit_submission_bottom", "", "hookDisplaySubmissionChangelog");
@@ -112,9 +110,8 @@ class Module extends FormToolsModule
      */
     public function hookAddFormFields($postdata)
     {
-        global $g_table_prefix, $g_field_sizes;
-
         $form_id = $postdata["form_id"];
+        $field_sizes = FieldSizes::get();
 
         // get column names of form table
         $col_name_hash = Forms::getFormColumnNames($form_id);
@@ -129,17 +126,18 @@ class Module extends FormToolsModule
         // loop through each new field and find out the database size (stored in ft_form_fields table).
         // for each, add the new column to the history table
         foreach ($new_columns as $new_column_name) {
+
             // get the field size of this form - that's all we really need to know
             $field_info = Fields::getFormFieldByColname($form_id, $new_column_name);
             $field_size = $field_info["field_size"];
-            $new_field_size = $g_field_sizes[$field_size]["sql"];
-            list($is_success, $err_message) = CoreGeneral::addTableColumn("{PREFIX}form_{$form_id}_history", $new_column_name, $new_field_size);
+            $new_field_size = $field_sizes[$field_size]["sql"];
+            CoreGeneral::addTableColumn("{PREFIX}form_{$form_id}_history", $new_column_name, $new_field_size);
         }
     }
 
 
     /**
-     * Updated in 1.1.4, this deletes the coresponding form fields in the history table when the admin
+     * Updated in 1.1.4, this deletes the corresponding form fields in the history table when the admin
      * deletes them from the Edit Form -> Fields tab.
      *
      * By the time this function is called, the actual fields have been removed from the database. This
@@ -152,23 +150,16 @@ class Module extends FormToolsModule
         $db = Core::$db;
 
         $form_id = $postdata["form_id"];
-        if (!isset($postdata["field_ids"]) || !is_array($postdata["field_ids"]) || !isset($postdata["deleted_field_info"])) {
+        if (!isset($postdata["field_ids"]) || !is_array($postdata["field_ids"]) || !isset($postdata["removed_fields"])) {
             return;
         }
 
-        foreach ($postdata["field_ids"] as $field_id) {
-            $field_info = array();
-            foreach ($postdata["deleted_field_info"] as $curr_field_info) {
-                if ($field_id == $curr_field_info["field_id"]) {
-                    $field_info = $curr_field_info;
-                    break;
-                }
-            }
-
-            if (!empty($field_info)) {
-                $col_name = $field_info["col_name"];
+        foreach ($postdata["removed_fields"] as $field_id => $col_name) {
+            try {
                 $db->query("ALTER TABLE {PREFIX}form_{$form_id}_history DROP $col_name");
                 $db->execute();
+            } catch (Exception $e) {
+
             }
         }
     }
@@ -260,9 +251,14 @@ class Module extends FormToolsModule
     public function hookDeleteForm($postdata)
     {
         $db = Core::$db;
+
         $form_id = $postdata["form_id"];
-        $db->query("DROP TABLE {PREFIX}form_{$form_id}_history");
-        $db->execute();
+        try {
+            $db->query("DROP TABLE {PREFIX}form_{$form_id}_history");
+            $db->execute();
+        } catch (Exception $e) {
+
+        }
     }
 
 
@@ -271,7 +267,7 @@ class Module extends FormToolsModule
         $form_id       = $postdata["form_id"];
         $submission_id = $postdata["submission_id"];
         $submission_info = Submissions::getSubmissionInfo($form_id, $submission_id);
-        Core::addHistoryRow($form_id, $submission_id, "new", $submission_info);
+        Code::addHistoryRow($form_id, $submission_id, "new", $submission_info);
     }
 
 

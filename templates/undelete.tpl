@@ -56,7 +56,7 @@
       <tr>
         <td class="pad_left_small">{$submission.submission_id}</td>
         <td align="center">
-          {$submission.sh___change_date|custom_format_date:$SESSION.account.timezone_offset:$module_settings.date_format}
+          {$submission.sh___change_date|custom_format_date:$account.timezone_offset:$module_settings.date_format}
         </td>
         <td align="center">
           <a href="view_deleted_submission.php?history_id={$submission.sh___history_id}">{$LANG.word_view|upper}</a>

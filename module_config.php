@@ -2,142 +2,140 @@
 
 $STRUCTURE = array();
 
+
 $HOOKS = array(
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_add_form_fields",
-    "hook_function"   => "sh_hook_add_form_fields",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_delete_form_fields",
-    "hook_function"   => "sh_hook_delete_form_fields",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_finalize_form",
-    "hook_function"   => "sh_hook_finalize_form",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "start",
-    "function_name"   => "ft_delete_form",
-    "hook_function"   => "sh_hook_delete_form",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "_ft_alter_table_column",
-    "hook_function"   => "sh_rename_table_column",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_create_blank_submission",
-    "hook_function"   => "sh_hook_create_blank_submission",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_process_form",
-    "hook_function"   => "sh_hook_process_form",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "start",
-    "function_name"   => "ft_delete_submission",
-    "hook_function"   => "sh_hook_delete_submission",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "start",
-    "function_name"   => "ft_delete_submissions",
-    "hook_function"   => "sh_hook_delete_submissions",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_update_submission",
-    "hook_function"   => "sh_hook_update_submission",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "start",
-    "function_name"   => "ft_update_submission",
-    "hook_function"   => "sh_hook_update_submission_init",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "end",
-    "function_name"   => "ft_file_delete_file_submission",
-    "hook_function"   => "sh_hook_delete_file_submission",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "template",
-    "action_location" => "admin_edit_submission_bottom",
-    "function_name"   => "",
-    "hook_function"   => "sh_hook_display_submission_changelog",
-    "priority"        => "50"
-  ),
-  array(
-    "hook_type"       => "code",
-    "action_location" => "main",
-    "function_name"   => "ft_display_page",
-    "hook_function"   => "sh_hook_include_module_resources",
-    "priority"        => "50"
-  )
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Fields::addFormFieldsAdvanced",
+        "hook_function"   => "hookAddFormFields",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Fields::deleteFormFields",
+        "hook_function"   => "hookDeleteFormFields",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Forms::finalizeForm",
+        "hook_function"   => "hookFinalizeForm",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "start",
+        "function_name"   => "FormTools\\Forms::deleteForm",
+        "hook_function"   => "hookDeleteForm",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\General::alterTableColumn",
+        "hook_function"   => "renameTableColumn",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Submissions::createBlankSubmission",
+        "hook_function"   => "hookCreateBlankSubmission",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Submissions::processFormSubmission",
+        "hook_function"   => "hookProcessForm",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "start",
+        "function_name"   => "FormTools\\Submissions::deleteSubmission",
+        "hook_function"   => "hookDeleteSubmission",
+        "priority"        => "50"
+    ),
+ array(
+        "hook_type"       => "code",
+        "action_location" => "start",
+        "function_name"   => "FormTools\\Submissions::deleteSubmissions",
+        "hook_function"   => "hookDeleteSubmissions",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Submissions::updateSubmission",
+        "hook_function"   => "hookUpdateSubmission",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "start",
+        "function_name"   => "FormTools\\Submissions::updateSubmission",
+        "hook_function"   => "hookUpdateSubmissionInit",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
+        "function_name"   => "FormTools\\Modules\\FieldTypeFile\\Module->deleteFileSubmission",
+        "hook_function"   => "hookDeleteFileSubmission",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "template",
+        "action_location" => "admin_edit_submission_bottom",
+        "function_name"   => "",
+        "hook_function"   => "hookDisplaySubmissionChangelog",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "main",
+        "function_name"   => "FormTools\\Themes::displayPage",
+        "hook_function"   => "hookIncludeModuleResources",
+        "priority"        => "50"
+    )
 );
 
 
 $FILES = array(
-  "database_integrity.php",
-  "global/",
-  "global/code/",
-  "global/code/actions.php",
-  "global/code/code.php",
-  "global/code/general.php",
-  "global/code/hooks.php",
-  "global/code/module.php",
-  "global/css/",
-  "global/css/styles.css",
-  "global/scripts/",
-  "global/scripts/scripts.js",
-  "help.php",
-  "images/",
-  "images/icon_submission_history.gif",
-  "images/loading.gif",
-  "index.php",
-  "lang/",
-  "lang/en_us.php",
-  "library.php",
-  "module.php",
-  "module_config.php",
-  "settings.php",
-  "templates/",
-  "templates/admin_edit_submission.tpl",
-  "templates/ajax_pagination.tpl",
-  "templates/help.tpl",
-  "templates/index.tpl",
-  "templates/list_history.tpl",
-  "templates/settings.tpl",
-  "templates/undelete.tpl",
-  "templates/view_change_history.tpl",
-  "templates/view_deleted_submission.tpl",
-  "undelete.php",
-  "view_deleted_submission.php"
+    "code/",
+    "code/actions.php",
+    "code/Code.class.php",
+    "code/General.class.php",
+    "code/Module.class.php",
+    "css/",
+    "css/styles.css",
+    "images/",
+    "images/icon_submission_history.gif",
+    "images/loading.gif",
+    "lang/",
+    "lang/en_us.php",
+    "scripts/",
+    "scripts/scripts.js",
+    "templates/",
+    "templates/admin_edit_submission.tpl",
+    "templates/ajax_pagination.tpl",
+    "templates/help.tpl",
+    "templates/index.tpl",
+    "templates/list_history.tpl",
+    "templates/settings.tpl",
+    "templates/undelete.tpl",
+    "templates/view_change_history.tpl",
+    "templates/view_deleted_submission.tpl",
+    "help.php",
+    "index.php",
+    "library.php",
+    "module.php",
+    "module_config.php",
+    "settings.php",
+    "undelete.php",
+    "view_deleted_submission.php"
 );
