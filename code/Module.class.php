@@ -22,14 +22,14 @@ class Module extends FormToolsModule
     protected $author = "Ben Keen";
     protected $authorEmail = "ben.keen@gmail.com";
     protected $authorLink = "https://formtools.org";
-    protected $version = "2.0.1";
+    protected $version = "2.0.2";
     protected $date = "2017-12-29";
     protected $originLanguage = "en_us";
 
     protected $nav = array(
-        "module_name"   => array("index.php", false),
+        "module_name" => array("index.php", false),
         "word_settings" => array("settings.php", true),
-        "word_help"     => array("help.php", true)
+        "word_help" => array("help.php", true)
     );
 
     public function install($module_id)
@@ -72,6 +72,14 @@ class Module extends FormToolsModule
             $db->execute();
         }
 
+        return array(true, "");
+    }
+
+
+    public function upgrade($module_id, $old_module_version)
+    {
+        Hooks::unregisterModuleHooks("submission_history");
+        $this->registerHooks();
         return array(true, "");
     }
 
