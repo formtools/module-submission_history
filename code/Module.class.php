@@ -22,8 +22,8 @@ class Module extends FormToolsModule
     protected $author = "Ben Keen";
     protected $authorEmail = "ben.keen@gmail.com";
     protected $authorLink = "https://formtools.org";
-    protected $version = "2.0.0";
-    protected $date = "2017-12-23";
+    protected $version = "2.0.1";
+    protected $date = "2017-12-29";
     protected $originLanguage = "en_us";
 
     protected $nav = array(
@@ -93,7 +93,10 @@ class Module extends FormToolsModule
         Hooks::registerHook("code", "submission_history", "start", "FormTools\\Submissions::deleteSubmissions", "hookDeleteSubmissions");
         Hooks::registerHook("code", "submission_history", "end", "FormTools\\Submissions::updateSubmission", "hookUpdateSubmission");
         Hooks::registerHook("code", "submission_history", "start", "FormTools\\Submissions::updateSubmission", "hookUpdateSubmissionInit");
+
+        // module integration
         Hooks::registerHook("code", "submission_history", "end", "FormTools\\Modules\\FieldTypeFile\\Module->deleteFileSubmission", "hookDeleteFileSubmission");
+        Hooks::registerHook("code", "submission_history", "end", "FormTools\\Modules\\FormBackup\\General::duplicateForm", "hookOnFormBackup");
 
         // display the submission history on the administrator's Edit Submission page
         Hooks::registerHook("template", "submission_history", "admin_edit_submission_bottom", "", "hookDisplaySubmissionChangelog");
@@ -187,6 +190,50 @@ class Module extends FormToolsModule
         Code::addHistoryRow($form_id, $postdata["new_submission_id"], "new", $data);
     }
 
+
+    /**
+     * Called after the Form Backup module successfully backs up a form.
+     * @param $hook_data
+     */
+    public function hookOnFormBackup($hook_data)
+    {
+        $db = Core::$db;
+        $settings = Modules::getModuleSettings(array("history_tables_created", "tracked_form_ids", "track_new_forms"), "submission_history");
+
+        // a little odd this, but the history_tables_created is really just an extra step the user needs to do to
+        // activate the module.
+        if ($settings["history_tables_created"] === "no") {
+            return;
+        }
+
+        $original_form_id = $hook_data["form_id"];
+        $form_id = $hook_data["new_form_id"];
+
+        // if the user copied the form submissions over with the form backup AND they want to automatically track new forms,
+        // let's create the history table with the history data populated as well. Seems the most logical thing to do from
+        // a UX perspective.
+        if ($hook_data["copy_submissions"] && $settings["track_new_forms"] === "yes") {
+
+            // assumption is the the history table exists. This is reasonable because we've checked the history_tables_created above
+            $db->query("CREATE TABLE {PREFIX}form_{$form_id}_history LIKE {PREFIX}form_{$original_form_id}_history");
+            $db->execute();
+
+            $db->query("INSERT {PREFIX}form_{$form_id}_history SELECT * FROM {PREFIX}form_{$original_form_id}_history");
+            $db->execute();
+        } else {
+            Code::createHistoryTable($form_id);
+        }
+
+        if ($settings["track_new_forms"] == "yes") {
+            $form_ids = explode(",", $settings["tracked_form_ids"]);
+            $form_ids[] = $form_id;
+            $updated_form_id_str = implode(",", $form_ids);
+
+            $this->setSettings(array(
+                "tracked_form_ids" => $updated_form_id_str
+            ));
+        }
+    }
 
     /**
      * Called when a single submission is deleted. This is called at the START of the ft_delete_submission

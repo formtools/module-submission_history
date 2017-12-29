@@ -84,6 +84,13 @@ $HOOKS = array(
     array(
         "hook_type"       => "code",
         "action_location" => "end",
+        "function_name"   => "FormTools\\Modules\\FormBackup\\General::duplicateForm",
+        "hook_function"   => "hookOnFormBackup",
+        "priority"        => "50"
+    ),
+    array(
+        "hook_type"       => "code",
+        "action_location" => "end",
         "function_name"   => "FormTools\\Modules\\FieldTypeFile\\Module->deleteFileSubmission",
         "hook_function"   => "hookDeleteFileSubmission",
         "priority"        => "50"

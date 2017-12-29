@@ -23,7 +23,7 @@ if (isset($_POST["update_activity_tracking"])) {
 
 $module_settings = $module->getSettings();
 $history_table_info = Code::getHistoryTableInfo();
-$all_forms = Forms::getForms();
+$all_forms = Forms::searchForms(array("status" => ""));
 
 $forms = array();
 $form_ids = array();
