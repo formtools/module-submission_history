@@ -41,8 +41,10 @@
             {$client_info[$item.sh___change_account_id].first_name} {$client_info[$item.sh___change_account_id].last_name}
           {elseif $item.sh___change_type == "submission"}
             {$L.phrase_submission_accounts_module}
-          {else}
+          {elseif isset($client_info[$item.sh___change_account_id])}
             <a href="../clients/edit.php?client_id={$item.sh___change_account_id}">{$client_info[$item.sh___change_account_id].first_name} {$client_info[$item.sh___change_account_id].last_name}</a>
+          {else}
+            &#8212;
           {/if}&nbsp;
         </div>
         <div class="sh__changes">
