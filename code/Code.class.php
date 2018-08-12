@@ -295,7 +295,7 @@ class Code
 
         $col_values["sh___changed_fields"] = implode(",", $changed_fields);
 
-        list ($col_str, $placeholders) = Core::$db->getInsertStatementParams($col_values);
+        list ($col_str, $placeholders, $col_values) = Core::$db->getInsertStatementParams($col_values);
         try {
             $db->query("INSERT INTO {PREFIX}form_{$form_id}_history ($col_str) VALUES ($placeholders)");
             $db->bindAll($col_values);

@@ -5,7 +5,7 @@ namespace FormTools\Modules\SubmissionHistory;
 use FormTools\Accounts;
 use FormTools\Core;
 use FormTools\Modules;
-use Smarty, PDO;
+use Smarty, SmartyBC, PDO;
 
 class General
 {
@@ -67,7 +67,7 @@ class General
     {
         $root_dir = Core::getRootDir();
 
-        $smarty = new Smarty();
+        $smarty = Core::useSmartyBC() ? new SmartyBC() : new Smarty();
         $smarty->setTemplateDir("$root_dir/themes/default");
         $smarty->setCompileDir("$root_dir/themes/default/cache/");
         $smarty->setUseSubDirs(Core::shouldUseSmartySubDirs());
