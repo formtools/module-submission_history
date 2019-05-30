@@ -14,11 +14,11 @@ $L = $module->getLangStrings();
 $success = true;
 $message = "";
 if (isset($_POST["update_activity_tracking"])) {
-    list($success, $message) = Code::updateActivityTracking($_POST, $L);
+	list($success, $message) = Code::updateActivityTracking($_POST, $L);
 } else if (isset($_GET["clear_logs"])) {
-    list($success, $message) = Code::clearFormLogs($_GET["clear_logs"], $L);
+	list($success, $message) = Code::clearFormLogs($_GET["clear_logs"], $L);
 } else if (isset($_POST["clear_all_logs"])) {
-    list($success, $message) = Code::clearAllFormLogs($L);
+	list($success, $message) = Code::clearAllFormLogs($L);
 }
 
 $module_settings = $module->getSettings();
@@ -30,30 +30,30 @@ $form_ids = array();
 $table_prefix = Core::getDbTablePrefix();
 
 foreach ($all_forms as $form_info) {
-    if ($form_info["is_complete"] == "no") {
-        continue;
-    }
+	if ($form_info["is_complete"] == "no") {
+		continue;
+	}
 
-    $form_id = $form_info["form_id"];
-    $form_ids[] = $form_id;
+	$form_id = $form_info["form_id"];
+	$form_ids[] = $form_id;
 
-    // once the history tables have been created, there should ALWAYS be a key here
-    if (array_key_exists("{$table_prefix}form_{$form_id}_history", $history_table_info)) {
-        $form_info["history_table_size"] = round($history_table_info["{$table_prefix}form_{$form_id}_history"]["size"]);
-        $form_info["history_table_rows"] = $history_table_info["{$table_prefix}form_{$form_id}_history"]["rows"];
-        $form_info["num_deleted_submissions"] = Code::getNumDeletedSubmissions($form_id);
-    }
+	// once the history tables have been created, there should ALWAYS be a key here
+	if (array_key_exists("{$table_prefix}form_{$form_id}_history", $history_table_info)) {
+		$form_info["history_table_size"] = round($history_table_info["{$table_prefix}form_{$form_id}_history"]["size"]);
+		$form_info["history_table_rows"] = $history_table_info["{$table_prefix}form_{$form_id}_history"]["rows"];
+		$form_info["num_deleted_submissions"] = Code::getNumDeletedSubmissions($form_id);
+	}
 
-    $forms[] = $form_info;
+	$forms[] = $form_info;
 }
 $form_ids_str = implode(",", $form_ids);
 
 $page_vars = array(
-    "g_success" => $success,
-    "g_message" => $message,
-    "forms" => $forms,
-    "module_settings" => $module_settings,
-    "configured_form_ids" => explode(",", $module_settings["tracked_form_ids"])
+	"g_success" => $success,
+	"g_message" => $message,
+	"forms" => $forms,
+	"module_settings" => $module_settings,
+	"configured_form_ids" => explode(",", $module_settings["tracked_form_ids"])
 );
 
 $page_vars["head_js"] = <<< END

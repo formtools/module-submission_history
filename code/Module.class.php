@@ -22,8 +22,8 @@ class Module extends FormToolsModule
     protected $author = "Ben Keen";
     protected $authorEmail = "ben.keen@gmail.com";
     protected $authorLink = "https://formtools.org";
-    protected $version = "2.0.4";
-    protected $date = "2018-08-11";
+    protected $version = "2.0.5";
+    protected $date = "2019-05-29";
     protected $originLanguage = "en_us";
 
     protected $nav = array(
@@ -108,7 +108,7 @@ class Module extends FormToolsModule
 
         // display the submission history on the administrator's Edit Submission page
         Hooks::registerHook("template", "submission_history", "admin_edit_submission_bottom", "", "hookDisplaySubmissionChangelog");
-        Hooks::registerHook("code", "submission_history", "main", "FormTools\\Themes::displayPage", "hookIncludeModuleResources");
+        Hooks::registerHook("code", "submission_history", "main", "FormTools\\Themes::getPage", "hookIncludeModuleResources");
     }
 
 
