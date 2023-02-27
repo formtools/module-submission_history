@@ -23,7 +23,7 @@ if (empty($form_id) || empty($history_id)) {
 $fields = Code::getHistoryItem($form_id, $history_id);
 
 $clean_fields = array();
-while (list($col_name, $value) = each($fields)) {
+foreach ($fields as $col_name => $value) {
     // ignore any special fields, or the last_modified_date
     if (in_array($col_name, array(
         "sh___change_date",

@@ -237,7 +237,7 @@ class Code
             "sh___change_account_id" => $account_id
         );
 
-        while (list($col, $value) = each($data)) {
+        foreach ($data as $col => $value) {
             // ignore any special fields, or the last_modified_date
             if (in_array($col, array(
                 "sh___change_date",
@@ -264,7 +264,7 @@ class Code
             // if there IS no last history row data, we're not interested in what fields have changed, since
             // it will look like ALL have. Instead, we just log the new history with blank for that field
             if (!empty($last_history_row_data)) {
-                while (list($col, $value) = each($data)) {
+                foreach ($data as $col => $value) {
                     // ignore any special fields
                     if (in_array($col, array(
                         "sh___change_date",
@@ -569,7 +569,7 @@ class Code
         $submission_info = Submissions::getSubmission($form_id, $submission_id);
 
         $fields = array();
-        while (list($col, $value) = each($history_info)) {
+        foreach ($history_info as $col => $value) {
             // ignore any special fields
             if (in_array($col, array(
                 "sh___change_date",
@@ -1017,7 +1017,7 @@ class Code
 
         $columns = array();
         $pairs = array();
-        while (list($col, $value) = each($data)) {
+        foreach ($data as $col => $value) {
             // ignore any special fields, or the last_modified_date
             if (in_array($col, array(
                 "sh___change_date",
